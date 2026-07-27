@@ -29,13 +29,14 @@ for label, cls in enumerate(CLASSES):
 
     for i in range(1, 41):
 
-        rgb = cv2.imread(str(rgb_folder / f"{cls}{i}.png"))
+        rgb = cv2.imread(str(rgb_folder / f"{cls}{i}.png"), cv2.IMREAD_UNCHANGED)
         front = cv2.imread(str(thermal_folder / f"{cls}{i}F.jpg"))
         back = cv2.imread(str(thermal_folder / f"{cls}{i}B.jpg"))
 
         if rgb is None or front is None or back is None:
             print(f"Skipping {cls}{i}")
             continue
+
 
         features = extract_all_features(rgb, front, back)
 
@@ -74,3 +75,4 @@ MODEL_PATH.mkdir(exist_ok=True)
 joblib.dump(model, MODEL_PATH / "svm_full.pkl")
 
 print("Model saved successfully.")
+

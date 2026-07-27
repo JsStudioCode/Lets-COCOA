@@ -3,8 +3,10 @@ import joblib
 import numpy as np
 from pathlib import Path
 
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, GridSearchCV, StratifiedKFold, cross_val_score
 from sklearn.svm import SVC
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import accuracy_score, classification_report
 
 from feature_extraction import (
@@ -34,7 +36,7 @@ for label, cls in enumerate(CLASSES):
 
     for i in range(1, 41):
 
-        rgb = cv2.imread(str(rgb_folder / f"{cls}{i}.png"))
+        rgb = cv2.imread(str(rgb_folder / f"{cls}{i}.png"), cv2.IMREAD_UNCHANGED)
 
         if rgb is None:
             continue
@@ -47,7 +49,6 @@ for label, cls in enumerate(CLASSES):
 
         if front is not None:
             thermal_features = extract_thermal_features(front)
-
             X.append(rgb_features + hsv_features + thermal_features)
             y.append(label)
 
@@ -56,7 +57,6 @@ for label, cls in enumerate(CLASSES):
 
         if back is not None:
             thermal_features = extract_thermal_features(back)
-
             X.append(rgb_features + hsv_features + thermal_features)
             y.append(label)
 
@@ -73,18 +73,35 @@ X_train, X_test, y_train, y_test = train_test_split(
     stratify=y
 )
 
-model = SVC(
-    kernel="rbf",
-    probability=True
-)
+pipeline = Pipeline([
+    ("scaler", StandardScaler()),
+    ("svm", SVC(probability=True)),
+])
 
-model.fit(X_train, y_train)
+param_grid = {
+    "svm__C": [0.1, 1, 10, 100],
+    "svm__gamma": ["scale", 0.01, 0.1, 1],
+    "svm__kernel": ["rbf", "linear"],
+}
+
+cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+
+print("Tuning hyperparameters (GridSearchCV, 5-fold)...")
+grid = GridSearchCV(pipeline, param_grid, cv=cv, scoring="accuracy", n_jobs=-1)
+grid.fit(X_train, y_train)
+
+print("Best params:", grid.best_params_)
+print("Best CV accuracy (train folds):", round(grid.best_score_, 4))
+
+model = grid.best_estimator_
 
 pred = model.predict(X_test)
-
-print("Accuracy:", accuracy_score(y_test, pred))
+print("\nHeld-out test accuracy:", accuracy_score(y_test, pred))
 print(classification_report(y_test, pred))
 
-joblib.dump(model, MODEL_PATH)
+full_cv_scores = cross_val_score(model, X, y, cv=cv, scoring="accuracy")
+print("5-fold CV accuracy on full dataset: "
+      f"{full_cv_scores.mean():.4f} +/- {full_cv_scores.std():.4f}")
 
-print("Single thermal model saved successfully!")
+joblib.dump(model, MODEL_PATH)
+print("\nSingle thermal model saved successfully!")
