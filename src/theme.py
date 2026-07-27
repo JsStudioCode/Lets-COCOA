@@ -26,7 +26,7 @@ CLASS_META = {
         "label": "Unripe",
         "color": COLORS["green"],
         "on_color": "#152008",
-        "blurb": "Green rind, firm shell, cooler surface temperature. Still building sugar.",
+        "blurb": "Green rind, firm shell, higher surface temperature because of greater water content and active growth. Sugar accumulation is still ongoing.",
     },
     "R": {
         "label": "Ripe",
