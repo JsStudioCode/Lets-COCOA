@@ -1,10 +1,15 @@
 import re
-import cv2
+from pathlib import Path
+try:
+    import cv2
+except ImportError:
+    cv2 = None
 import joblib
 import numpy as np
 import pandas as pd
 import streamlit as st
 from PIL import Image
+
 
 from src.feature_extraction import (
     extract_hsv_features,
@@ -28,40 +33,58 @@ inject_theme()
 
 
 CLASSES = ["CPB", "OR", "R", "UR"]
+BASE_DIR = Path(__file__).resolve().parent.parent
 
 
 @st.cache_resource
 def load_model():
-    return joblib.load("models/svm_single.pkl")
+    model_path = BASE_DIR / "models" / "svm_single.pkl"
+    if not model_path.exists():
+        model_path = Path("models/svm_single.pkl")
+    return joblib.load(model_path)
+
 
 
 model = load_model()
 
 
+try:
+    import cv2
+except ImportError:
+    cv2 = None
+
+
 def preprocess_rgb(uploaded_file):
     rgb_pil = Image.open(uploaded_file)
 
-    if rgb_pil.mode == "RGBA":
-        rgb = cv2.cvtColor(
-            np.array(rgb_pil),
-            cv2.COLOR_RGBA2BGRA,
-        )
+    if cv2 is not None:
+        if rgb_pil.mode == "RGBA":
+            rgb = cv2.cvtColor(
+                np.array(rgb_pil),
+                cv2.COLOR_RGBA2BGRA,
+            )
+        else:
+            rgb = cv2.cvtColor(
+                np.array(rgb_pil.convert("RGB")),
+                cv2.COLOR_RGB2BGR,
+            )
     else:
-        rgb = cv2.cvtColor(
-            np.array(rgb_pil.convert("RGB")),
-            cv2.COLOR_RGB2BGR,
-        )
+        rgb = np.array(rgb_pil.convert("RGB"))[:, :, ::-1]
 
     return rgb
 
 
 def preprocess_thermal(uploaded_file):
-    thermal = cv2.cvtColor(
-        np.array(Image.open(uploaded_file).convert("RGB")),
-        cv2.COLOR_RGB2BGR,
-    )
+    if cv2 is not None:
+        thermal = cv2.cvtColor(
+            np.array(Image.open(uploaded_file).convert("RGB")),
+            cv2.COLOR_RGB2BGR,
+        )
+    else:
+        thermal = np.array(Image.open(uploaded_file).convert("RGB"))[:, :, ::-1]
 
     return thermal
+
 
 
 def predict_pod(rgb_file, thermal_file):
@@ -77,10 +100,47 @@ def predict_pod(rgb_file, thermal_file):
 
     prediction = model.predict([features])[0]
     if hasattr(model, "predict_proba"):
-        confidence = np.max(model.predict_proba([features])[0]) * 100
+        proba = model.predict_proba([features])[0]
     else:
-        confidence = 100.0
-    return CLASSES[prediction], confidence
+        proba = np.zeros(len(CLASSES))
+        proba[prediction] = 1.0
+
+    confidence = proba[prediction] * 100
+    return CLASSES[prediction], confidence, proba
+
+
+def second_best_class(proba, top_class):
+    """Return (class_name, confidence_pct) for the runner-up prediction."""
+    order = np.argsort(proba)[::-1]
+    for idx in order:
+        cls = CLASSES[idx]
+        if cls != top_class:
+            return cls, proba[idx] * 100
+    return None, 0.0
+
+
+def image_box_html(uploaded_file, caption):
+    """Render an image inside a fixed-height, fixed-width box (object-fit:
+    cover) so RGB and thermal previews line up evenly regardless of their
+    native aspect ratio."""
+    import base64
+    uploaded_file.seek(0)
+    b64 = base64.b64encode(uploaded_file.read()).decode()
+    uploaded_file.seek(0)
+    ext = uploaded_file.name.rsplit(".", 1)[-1].lower()
+    mime = "jpeg" if ext in ("jpg", "jpeg") else ext
+    return f"""
+<div style="width:100%;">
+    <div style="width:100%; height:320px; border-radius:12px; overflow:hidden;
+                border:1px solid rgba(120,120,120,0.25);">
+        <img src="data:image/{mime};base64,{b64}"
+             style="width:100%; height:100%; object-fit:cover; display:block;" />
+    </div>
+    <div class="cp-muted" style="text-align:center; margin-top:0.4rem; font-size:0.85rem;">
+        {caption}
+    </div>
+</div>
+"""
 
 
 def normalize_name(filename):
@@ -160,7 +220,7 @@ with tab_single:
 
         with st.spinner("Reading pod signals..."):
 
-            pred_class, confidence = predict_pod(
+            pred_class, confidence, proba = predict_pod(
                 rgb_file,
                 thermal_file,
             )
@@ -206,21 +266,31 @@ with tab_single:
 """
             )
 
+        if confidence < 85:
+            alt_class, alt_conf = second_best_class(proba, pred_class)
+            if alt_class:
+                alt_meta = CLASS_META[alt_class]
+                st.html(
+                    f"""
+<div class="cp-card" style="margin-top:0.8rem;">
+    <div class="cp-muted cp-mono" style="font-size:0.78rem;margin-bottom:0.4rem;">
+        COULD ALSO BE
+    </div>
+    <span style="color:{alt_meta['color']}; font-weight:600;">{alt_class} · {alt_meta['label']}</span>
+    <span class="cp-muted"> — {alt_conf:.1f}% confidence</span>
+</div>
+"""
+                )
+
         st.write("")
 
-        c1, c2 = st.columns(2)
+        c1, c2 = st.columns(2, gap="large")
 
         with c1:
-            st.image(
-                rgb_file,
-                caption="RGB Image",
-            )
+            st.html(image_box_html(rgb_file, "RGB Image"))
 
         with c2:
-            st.image(
-                thermal_file,
-                caption="Thermal Image",
-            )
+            st.html(image_box_html(thermal_file, "Thermal Image"))
 
 
 with tab_batch:
@@ -285,16 +355,23 @@ with tab_batch:
 
         for i, name in enumerate(common):
 
-            pred_class, confidence = predict_pod(
+            pred_class, confidence, proba = predict_pod(
                 rgb_dict[name],
                 thermal_dict[name],
             )
+
+            if confidence < 85:
+                alt_class, alt_conf = second_best_class(proba, pred_class)
+                alt_text = f"{alt_class} ({alt_conf:.1f}%)" if alt_class else ""
+            else:
+                alt_text = ""
 
             results.append(
                 {
                     "Pod": name,
                     "Prediction": pred_class,
                     "Confidence (%)": round(confidence, 2),
+                    "Could Also Be": alt_text,
                 }
             )
 
