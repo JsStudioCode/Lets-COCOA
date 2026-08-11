@@ -1,5 +1,5 @@
 import streamlit as st
-from src.theme import inject_theme, ripeness_spectrum_html, COLORS
+from src.theme import inject_theme, COLORS
 
 st.set_page_config(
     page_title="CocoaPodAI — Let's Cocoa",
@@ -10,99 +10,108 @@ st.set_page_config(
 inject_theme()
 
 # ---------------------------------------------------------------------------
+# Nav
+# ---------------------------------------------------------------------------
+nav_l, nav_pod, nav_home = st.columns([5, 1.3, 1])
+with nav_pod:
+    st.page_link("pages/2_📖_Pod_Guide.py", label="Pod Guide", use_container_width=True)
+with nav_home:
+    st.page_link("Home.py", label="Home", use_container_width=True)
+
+st.write("")
+st.write("")
+
+# ---------------------------------------------------------------------------
 # Hero
 # ---------------------------------------------------------------------------
-left, right = st.columns([1.3, 1], gap="large")
-
-with left:
-    st.markdown(
-        """
-        <div class="cp-mono" style="color:#E3A62F; letter-spacing:0.12em; font-size:0.85rem;
-                    margin-bottom:0.6rem;">
-            RGB + THERMAL COCOA POD CLASSIFICATION
+st.markdown(
+    """
+    <div style="text-align:center; max-width:44rem; margin:0 auto;">
+        <div class="cp-display" style="font-size:3.6rem; margin-bottom:0.6rem;">
+            🍫 Let's Cocoa!
         </div>
-        """,
-        unsafe_allow_html=True,
-    )
-    st.markdown(
-        """
-        <div class="cp-display" style="font-size:4.2rem; line-height:1.05; margin-bottom:0.6rem;">
-            Let's Cocoa 🍫
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-    st.markdown(
-        """
-        <p style="font-size:1.15rem; color:#B9A990; max-width:36rem; line-height:1.6;">
-        Point a camera at a pod. CocoaPodAI reads its rind color and its heat
-        signature together, and tells you what it's looking at — unripe, ripe,
-        overripe, or diseased — in seconds.
+        <p class="cp-muted" style="font-size:1.15rem; line-height:1.6;">
+            Ready To Discover Your Cocoa Pod's Story?<br>
+            Upload Its RGB And Thermal Images And Let CocoaPodAI Reveal Its Stage.
         </p>
-        """,
-        unsafe_allow_html=True,
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
+
+st.write("")
+mid = st.columns([1, 1, 1])[1]
+with mid:
+    st.page_link(
+        "pages/1_🔬_Predict.py",
+        label="Predict Pod",
+        use_container_width=True,
     )
 
-    st.markdown(ripeness_spectrum_html(), unsafe_allow_html=True)
-
-    st.page_link("pages/1_🔬_Predict.py", label="Classify a pod →", icon="🔬")
-
-with right:
-    st.markdown(
-        f"""
-        <div class="cp-card" style="height:100%;">
-            <div class="cp-mono" style="color:{COLORS['muted']}; font-size:0.8rem; margin-bottom:0.8rem;">
-                HOW IT DECIDES
-            </div>
-            <div style="display:flex; flex-direction:column; gap:1rem;">
-                <div>
-                    <b>RGB image</b><br>
-                    <span class="cp-muted">Rind color, texture, and shape — the same cues a farmer reads by eye.</span>
-                </div>
-                <div>
-                    <b>Thermal image</b><br>
-                    <span class="cp-muted">Surface heat pattern — signal the eye alone can't see.</span>
-                </div>
-                <div>
-                    <b>Classifier</b><br>
-                    <span class="cp-muted">An SVM trained on both signals together outputs a class and a confidence score.</span>
-                </div>
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
+st.write("")
+st.write("")
 st.divider()
+st.write("")
+
+# ---------------------------------------------------------------------------
+# How It Decides
+# ---------------------------------------------------------------------------
+st.markdown(
+    '<div class="cp-display" style="font-size:1.9rem; text-align:center; margin-bottom:1.6rem;">'
+    'How It Decides</div>',
+    unsafe_allow_html=True,
+)
+
+c1, c2, c3 = st.columns(3, gap="large")
+steps = [
+    ("🖼️", "RGB Image", "Colour, Texture, And Shape — Visual Cues That Reveal The Pod's Appearance And Stage Of Development."),
+    ("🌡️", "Thermal Image", "Surface Heat Patterns — Thermal Clues That Reveal Differences Invisible To The Eye."),
+    ("🧠", "Classifier", "The SVM Brings Both Sets Of Signals Together, Compares Their Learned Patterns, And Predicts The Pod's Class With A Confidence Score."),
+]
+for col, (icon, title, body) in zip((c1, c2, c3), steps):
+    with col:
+        st.markdown(
+            f"""
+            <div class="cp-card" style="height:100%;">
+                <div style="font-size:1.7rem; margin-bottom:0.5rem;">{icon}</div>
+                <div style="font-weight:600; font-size:1.05rem; margin-bottom:0.5rem;">{title}</div>
+                <div class="cp-muted" style="font-size:0.92rem; line-height:1.55;">{body}</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+st.write("")
+st.write("")
 
 # ---------------------------------------------------------------------------
 # Feature strip
 # ---------------------------------------------------------------------------
 c1, c2, c3 = st.columns(3, gap="large")
 features = [
-    ("🩺", "Catches disease early", "CPB shows up in thermal patterns before it's obvious in the rind."),
-    ("⚡", "Instant result", "Upload two photos, get a class and a confidence score back immediately."),
-    ("🌾", "Built for the field", "Trained on real farm pods, not lab-perfect samples."),
+    ("🩺", "Catches Disease Early", "CPB Shows Up In Thermal Patterns Before It's Obvious In The Rind."),
+    ("⚡", "Instant Result", "Upload Two Photos, Get A Class And A Confidence Score Back Immediately."),
+    ("🌾", "Built For The Field", "Trained On Real Farm Pods, Not Lab-Perfect Samples."),
 ]
 for col, (icon, title, body) in zip((c1, c2, c3), features):
     with col:
         st.markdown(
             f"""
             <div class="cp-card">
-                <div style="font-size:1.6rem;">{icon}</div>
+                <div style="font-size:1.5rem;">{icon}</div>
                 <div style="font-weight:600; margin:0.5rem 0 0.3rem 0;">{title}</div>
-                <div class="cp-muted" style="font-size:0.92rem;">{body}</div>
+                <div class="cp-muted" style="font-size:0.9rem;">{body}</div>
             </div>
             """,
             unsafe_allow_html=True,
         )
 
+st.write("")
 st.markdown(
-    f"""<p class="cp-muted" style="text-align:center; margin-top:2rem; font-size:0.85rem;">
-    Want to know what each class actually looks like?
-    </p>""",
+    '<p class="cp-muted" style="text-align:center; margin-top:1.2rem; font-size:0.9rem;">'
+    "Want To Know What Each Class Actually Looks Like?</p>",
     unsafe_allow_html=True,
 )
 mid = st.columns([1, 1, 1])[1]
 with mid:
-    st.page_link("pages/2_📖_Pod_Guide.py", label="See the pod guide →", icon="📖")
+    st.page_link("pages/2_📖_Pod_Guide.py", label="See The Pod Guide →", icon="📖", use_container_width=True)

@@ -145,6 +145,68 @@ def inject_theme() -> None:
 
         a, a:visited {{ color: var(--cp-gold); }}
 
+        /* page_link elements styled as gold pill buttons (nav + CTAs) */
+        [data-testid="stPageLink"] {{
+            width: 100%;
+        }}
+        [data-testid="stPageLink"] a,
+        a[data-testid="stPageLink-NavLink"] {{
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            background: var(--cp-gold) !important;
+            color: #2A1B04 !important;
+            border-radius: 12px;
+            padding: 0.65rem 1.3rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            text-decoration: none !important;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }}
+        [data-testid="stPageLink"] a:hover,
+        a[data-testid="stPageLink-NavLink"]:hover {{
+            transform: translateY(-1px);
+            box-shadow: 0 6px 18px rgba(227, 166, 47, 0.25);
+        }}
+        [data-testid="stPageLink"] a span,
+        [data-testid="stPageLink"] a p {{
+            color: #2A1B04 !important;
+        }}
+
+        /* Tabs styled as big pill choices */
+        .stTabs [data-baseweb="tab-list"] {{
+            gap: 0.6rem;
+            background: transparent;
+        }}
+        .stTabs [data-baseweb="tab"] {{
+            background: var(--cp-surface);
+            border: 1px solid var(--cp-surface-hi);
+            border-radius: 14px;
+            padding: 0.9rem 1.8rem;
+            font-weight: 600;
+            color: var(--cp-muted);
+        }}
+        .stTabs [aria-selected="true"] {{
+            background: var(--cp-gold) !important;
+            color: #2A1B04 !important;
+            border-color: var(--cp-gold) !important;
+        }}
+        .stTabs [data-baseweb="tab-highlight"] {{ display: none; }}
+        .stTabs [data-baseweb="tab-border"] {{ display: none; }}
+
+        /* Dataframe */
+        [data-testid="stDataFrame"] {{
+            border-radius: 14px;
+            overflow: hidden;
+            border: 1px solid var(--cp-surface-hi);
+        }}
+
+        [data-testid="stAlert"] {{
+            border-radius: 14px;
+        }}
+
         /* Reduced motion */
         @media (prefers-reduced-motion: reduce) {{
             * {{ transition: none !important; animation: none !important; }}

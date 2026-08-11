@@ -4,9 +4,9 @@ from src.theme import CLASS_META, inject_theme
 st.set_page_config(page_title="Pod Guide — CocoaPodAI", page_icon="📖", layout="wide")
 inject_theme()
 
-st.markdown('<div class="cp-display" style="font-size:2.4rem;">📖 Pod guide</div>', unsafe_allow_html=True)
+st.markdown('<div class="cp-display" style="font-size:2.4rem;">Pod Guide 📖</div>', unsafe_allow_html=True)
 st.markdown(
-    '<p class="cp-muted">What CocoaPodAI is actually looking for in each class.</p>',
+    '<p class="cp-muted">What CocoaPodAI Is Actually Looking For In Each Class.</p>',
     unsafe_allow_html=True,
 )
 st.write("")
@@ -19,7 +19,7 @@ for col, code in zip(cols, order):
     with col:
         st.markdown(
             f"""
-            <div class="cp-card" style="border-top: 4px solid {meta['color']}; min-height:230px;">
+            <div class="cp-card" style="border-top: 5px solid {meta['color']}; min-height:230px;">
                 <div class="cp-mono" style="color:{meta['color']}; font-size:0.85rem; margin-bottom:0.4rem;">
                     {code}
                 </div>
@@ -36,8 +36,8 @@ for col, code in zip(cols, order):
 
 st.write("")
 st.info(
-    "Note: CPB (Cocoa Pod Borer / black pod disease) can occur at any ripeness "
-    "stage — it's shown separately because it's a diagnosis, not a stage in the "
-    "ripening timeline.",
+    "Note: CPB (Cocoa Pod Borer / Black Pod Disease) Can Occur At Any Ripeness "
+    "Stage — It's Shown Separately Because It's A Diagnosis, Not A Stage In The "
+    "Ripening Timeline.",
     icon="🩺",
 )
